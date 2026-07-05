@@ -20,11 +20,11 @@ function buildTrackingSheet(
   const monthLabel = getMonthLabel(year, month);
   const globalPercentage = getGlobalPercentage(habits, year, month);
 
-  const weekHeaderRow: (string | number)[] = ['Hábito', 'Tipo', 'Unidad'];
-  const dayHeaderRow: string[] = ['', '', ''];
+  const weekHeaderRow: (string | number)[] = ['Orden', 'Hábito', 'Tipo', 'Unidad'];
+  const dayHeaderRow: string[] = ['', '', '', ''];
   const merges: XLSX.Range[] = [];
 
-  let colIndex = 3;
+  let colIndex = 4;
   weeks.forEach((week) => {
     const startCol = colIndex;
     week.days.forEach((day, dayIndex) => {
@@ -41,9 +41,10 @@ function buildTrackingSheet(
   weekHeaderRow.push('Total/Mejor', 'Días activos', 'Progreso %');
   dayHeaderRow.push('', '', '');
 
-  const habitRows = habits.map((habit) => {
+  const habitRows = habits.map((habit, index) => {
     const stats = getHabitStats(habit, year, month);
     const row: (string | number)[] = [
+      index + 1,
       habit.name,
       habit.kind === 'numeric' ? 'Numérico' : 'Sí/No',
       habit.unit,
@@ -76,7 +77,7 @@ function buildTrackingSheet(
     { s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(colIndex + 2, 6) } },
     ...merges,
   ];
-  worksheet['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 12 }, ...Array.from({ length: colIndex }, () => ({ wch: 10 }))];
+  worksheet['!cols'] = [{ wch: 6 }, { wch: 22 }, { wch: 10 }, { wch: 12 }, ...Array.from({ length: colIndex }, () => ({ wch: 10 }))];
   return worksheet;
 }
 
@@ -90,10 +91,11 @@ function buildSummarySheet(habits: Habit[], year: number, month: number): XLSX.W
     ['Nivel alcanzado', getLevel(globalPercentage)],
     ['Forma activa', getActiveForm(globalPercentage).name],
     [],
-    ['Hábito', 'Tipo', 'Unidad', 'Total', 'Mejor/Prom', 'Días activos', 'Progreso (%)'],
-    ...habits.map((habit) => {
+    ['Orden', 'Hábito', 'Tipo', 'Unidad', 'Total', 'Mejor/Prom', 'Días activos', 'Progreso (%)'],
+    ...habits.map((habit, index) => {
       const stats = getHabitStats(habit, year, month);
       return [
+        index + 1,
         habit.name,
         habit.kind === 'numeric' ? 'Numérico' : 'Sí/No',
         habit.unit,

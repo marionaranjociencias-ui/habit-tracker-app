@@ -13,6 +13,8 @@ type HabitGridProps = {
   onRename: (habitId: string, name: string) => void;
   onUpdateUnit: (habitId: string, unit: string) => void;
   onRemove: (habitId: string) => void;
+  onMoveUp: (habitId: string) => void;
+  onMoveDown: (habitId: string) => void;
 };
 
 export function HabitGrid({
@@ -26,6 +28,8 @@ export function HabitGrid({
   onRename,
   onUpdateUnit,
   onRemove,
+  onMoveUp,
+  onMoveDown,
 }: HabitGridProps) {
   return (
     <section className="habit-grid">
@@ -33,6 +37,7 @@ export function HabitGrid({
         <table className="habit-grid__table">
           <thead>
             <tr>
+              <th className="habit-grid__order-header">Ord.</th>
               <th className="habit-grid__habit-header">Hábitos</th>
               <th className="habit-grid__unit-header">Unidades</th>
               {weeks.map((week, weekIndex) => (
@@ -52,6 +57,7 @@ export function HabitGrid({
             <tr>
               <th />
               <th />
+              <th />
               {weeks.map((week, weekIndex) =>
                 week.days.map((day) => (
                   <th
@@ -67,10 +73,13 @@ export function HabitGrid({
             </tr>
           </thead>
           <tbody>
-            {habits.map((habit) => (
+            {habits.map((habit, index) => (
               <HabitRow
                 key={habit.id}
                 habit={habit}
+                order={index + 1}
+                isFirst={index === 0}
+                isLast={index === habits.length - 1}
                 weeks={weeks}
                 year={year}
                 month={month}
@@ -79,6 +88,8 @@ export function HabitGrid({
                 onRename={onRename}
                 onUpdateUnit={onUpdateUnit}
                 onRemove={onRemove}
+                onMoveUp={onMoveUp}
+                onMoveDown={onMoveDown}
               />
             ))}
           </tbody>

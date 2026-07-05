@@ -150,6 +150,26 @@ export function useHabits(userId: string, initialYear?: number, initialMonth?: n
     setHabits((prev) => prev.filter((habit) => habit.id !== habitId));
   }, []);
 
+  const moveHabitUp = useCallback((habitId: string) => {
+    setHabits((prev) => {
+      const index = prev.findIndex((habit) => habit.id === habitId);
+      if (index <= 0) return prev;
+      const next = [...prev];
+      [next[index - 1], next[index]] = [next[index], next[index - 1]];
+      return next;
+    });
+  }, []);
+
+  const moveHabitDown = useCallback((habitId: string) => {
+    setHabits((prev) => {
+      const index = prev.findIndex((habit) => habit.id === habitId);
+      if (index < 0 || index >= prev.length - 1) return prev;
+      const next = [...prev];
+      [next[index], next[index + 1]] = [next[index + 1], next[index]];
+      return next;
+    });
+  }, []);
+
   const resetMonth = useCallback(() => {
     const confirmed = window.confirm('¿Reiniciar todos los hábitos de este mes?');
     if (!confirmed) return;
@@ -188,6 +208,8 @@ export function useHabits(userId: string, initialYear?: number, initialMonth?: n
     renameHabit,
     updateUnit,
     removeHabit,
+    moveHabitUp,
+    moveHabitDown,
     resetMonth,
     goToPreviousMonth,
     goToNextMonth,

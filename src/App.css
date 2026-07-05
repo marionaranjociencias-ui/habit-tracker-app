@@ -353,6 +353,67 @@ body {
   font-size: 1rem;
 }
 
+.habit-grid__order-header {
+  width: 3.5rem;
+  min-width: 3.5rem;
+  font-size: 0.75rem;
+  vertical-align: bottom;
+}
+
+.habit-row__order-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.35rem 0.25rem;
+  background: #f5f7f9;
+  vertical-align: middle;
+}
+
+.habit-row__order-num {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #e8ecf0;
+  color: #4a5568;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.habit-row__order-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.habit-row__order-btn {
+  width: 1.35rem;
+  height: 1.1rem;
+  padding: 0;
+  border: 1px solid #cbd5e0;
+  border-radius: 3px;
+  background: #fff;
+  color: #4a5568;
+  font-size: 0.65rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.habit-row__order-btn:hover:not(:disabled) {
+  background: #edf2f7;
+  border-color: #a0aec0;
+}
+
+.habit-row__order-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .habit-row__name-cell {
   display: flex;
   align-items: center;

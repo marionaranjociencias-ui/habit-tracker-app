@@ -25,6 +25,8 @@ function AppContent({ userId }: { userId: string }) {
     renameHabit,
     updateUnit,
     removeHabit,
+    moveHabitUp,
+    moveHabitDown,
     resetMonth,
     goToPreviousMonth,
     goToNextMonth,
@@ -88,6 +90,8 @@ function AppContent({ userId }: { userId: string }) {
         onRename={renameHabit}
         onUpdateUnit={updateUnit}
         onRemove={removeHabit}
+        onMoveUp={moveHabitUp}
+        onMoveDown={moveHabitDown}
       />
 
       <footer className="app__footer">

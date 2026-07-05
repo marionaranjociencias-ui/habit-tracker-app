@@ -5,6 +5,9 @@ import { ProgressBar } from './ProgressBar';
 
 type HabitRowProps = {
   habit: Habit;
+  order: number;
+  isFirst: boolean;
+  isLast: boolean;
   weeks: WeekInfo[];
   year: number;
   month: number;
@@ -13,10 +16,15 @@ type HabitRowProps = {
   onRename: (habitId: string, name: string) => void;
   onUpdateUnit: (habitId: string, unit: string) => void;
   onRemove: (habitId: string) => void;
+  onMoveUp: (habitId: string) => void;
+  onMoveDown: (habitId: string) => void;
 };
 
 export function HabitRow({
   habit,
+  order,
+  isFirst,
+  isLast,
   weeks,
   year,
   month,
@@ -25,12 +33,39 @@ export function HabitRow({
   onRename,
   onUpdateUnit,
   onRemove,
+  onMoveUp,
+  onMoveDown,
 }: HabitRowProps) {
   const stats = getHabitStats(habit, year, month);
   const isNumeric = habit.kind === 'numeric';
 
   return (
     <tr className="habit-row">
+      <td className="habit-row__order-cell">
+        <span className="habit-row__order-num">{order}</span>
+        <div className="habit-row__order-actions">
+          <button
+            type="button"
+            className="habit-row__order-btn"
+            onClick={() => onMoveUp(habit.id)}
+            disabled={isFirst}
+            aria-label={`Subir ${habit.name}`}
+            title="Subir prioridad"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            className="habit-row__order-btn"
+            onClick={() => onMoveDown(habit.id)}
+            disabled={isLast}
+            aria-label={`Bajar ${habit.name}`}
+            title="Bajar prioridad"
+          >
+            ↓
+          </button>
+        </div>
+      </td>
       <td className="habit-row__name-cell">
         <span className={`habit-row__kind-badge habit-row__kind-badge--${habit.kind}`}>
           {isNumeric ? '#' : '✓'}
