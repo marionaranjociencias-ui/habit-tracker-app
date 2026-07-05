@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DEFAULT_HABITS, STORAGE_PREFIX } from '../data/characterForms';
-import type { Habit, HabitKind, MonthData } from '../types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { DEFAULT_HABITS } from '../data/characterForms';
+import { loadMonthData, saveMonthToFirestore } from '../lib/habitStore';
+import type { Habit, HabitKind } from '../types';
+
+const SAVE_DEBOUNCE_MS = 400;
 
 function createDefaultHabits(): Habit[] {
   return DEFAULT_HABITS.map((habit, index) => ({
@@ -13,60 +16,61 @@ function createDefaultHabits(): Habit[] {
   }));
 }
 
-function getStorageKey(userId: string, year: number, month: number): string {
-  const m = String(month + 1).padStart(2, '0');
-  return `${STORAGE_PREFIX}-${userId}-${year}-${m}`;
-}
-
-function loadMonthData(userId: string, year: number, month: number): MonthData {
-  const key = getStorageKey(userId, year, month);
-  const raw = localStorage.getItem(key);
-
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw) as MonthData;
-      return {
-        ...parsed,
-        habits: parsed.habits.map((habit) => ({
-          ...habit,
-          kind: habit.kind ?? 'boolean',
-          unit: habit.unit ?? '—',
-          checks: habit.checks ?? {},
-          values: habit.values ?? {},
-        })),
-      };
-    } catch {
-      // fall through to defaults
-    }
-  }
-
-  return { year, month, habits: createDefaultHabits() };
-}
-
 export function useHabits(userId: string, initialYear?: number, initialMonth?: number) {
   const now = new Date();
   const [year, setYear] = useState(initialYear ?? now.getFullYear());
   const [month, setMonth] = useState(initialMonth ?? now.getMonth());
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isReady, setIsReady] = useState(false);
-
-  const storageKey = useMemo(
-    () => getStorageKey(userId, year, month),
-    [userId, year, month],
-  );
+  const [error, setError] = useState<string | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!userId) return;
+
+    let cancelled = false;
     setIsReady(false);
-    setHabits(loadMonthData(userId, year, month).habits);
-    setIsReady(true);
+    setError(null);
+
+    loadMonthData(userId, year, month)
+      .then((data) => {
+        if (cancelled) return;
+        setHabits(data.habits);
+        setIsReady(true);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('Error al cargar hábitos:', err);
+        setError('No se pudieron cargar tus hábitos. Revisa tu conexión.');
+        setHabits(createDefaultHabits());
+        setIsReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId, year, month]);
 
   useEffect(() => {
     if (!userId || !isReady) return;
-    const payload: MonthData = { year, month, habits };
-    localStorage.setItem(storageKey, JSON.stringify(payload));
-  }, [habits, isReady, month, storageKey, userId, year]);
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = setTimeout(() => {
+      saveMonthToFirestore(userId, { year, month, habits }).catch((err) => {
+        console.error('Error al guardar hábitos:', err);
+        setError('No se pudieron guardar los cambios. Revisa tu conexión.');
+      });
+    }, SAVE_DEBOUNCE_MS);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [habits, isReady, month, userId, year]);
 
   const toggleCheck = useCallback((habitId: string, dateKey: string) => {
     setHabits((prev) =>
@@ -177,6 +181,7 @@ export function useHabits(userId: string, initialYear?: number, initialMonth?: n
     month,
     habits,
     isReady,
+    error,
     toggleCheck,
     setValue,
     addHabit,

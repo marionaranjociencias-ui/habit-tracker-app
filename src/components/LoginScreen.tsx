@@ -41,7 +41,7 @@ export function LoginScreen() {
         </button>
 
         <p className="login-screen__note">
-          Fase 2 — Tus datos se guardan en este navegador, asociados a tu cuenta.
+          Fase 3 — Tus datos se sincronizan en la nube con tu cuenta de Google.
         </p>
       </div>
     </div>

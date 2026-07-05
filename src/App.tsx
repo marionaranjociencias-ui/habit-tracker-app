@@ -18,6 +18,7 @@ function AppContent({ userId }: { userId: string }) {
     month,
     habits,
     isReady,
+    error,
     toggleCheck,
     setValue,
     addHabit,
@@ -47,13 +48,16 @@ function AppContent({ userId }: { userId: string }) {
 
   return (
     <div className="app">
+      {error && (
+        <div className="app__error" role="alert">
+          {error}
+        </div>
+      )}
       <header className="app__header">
         <div>
           <p className="app__tagline">Sí/No y cantidades — tu app de hábitos</p>
           <h1 className="app__title">Habit Tracker App</h1>
-          <p className="app__phase">
-            Fase 2 — Sesión con Google (datos en este navegador por usuario)
-          </p>
+          <p className="app__phase">Fase 3 — Datos sincronizados en la nube</p>
         </div>
         <div className="app__header-actions">
           <AuthHeader />
@@ -89,7 +93,8 @@ function AppContent({ userId }: { userId: string }) {
       <footer className="app__footer">
         <p>
           Hábitos con <strong>#</strong> aceptan números (lagartijas, pull-ups). Hábitos con{' '}
-          <strong>✓</strong> son sí/no. Próxima fase: sincronizar datos en la nube.
+          <strong>✓</strong> son sí/no. Tus datos se sincronizan con tu cuenta de Google en todos
+          tus dispositivos.
         </p>
       </footer>
     </div>
