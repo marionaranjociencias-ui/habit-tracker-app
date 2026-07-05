@@ -13,13 +13,13 @@ function createDefaultHabits(): Habit[] {
   }));
 }
 
-function getStorageKey(year: number, month: number): string {
+function getStorageKey(userId: string, year: number, month: number): string {
   const m = String(month + 1).padStart(2, '0');
-  return `${STORAGE_PREFIX}-${year}-${m}`;
+  return `${STORAGE_PREFIX}-${userId}-${year}-${m}`;
 }
 
-function loadMonthData(year: number, month: number): MonthData {
-  const key = getStorageKey(year, month);
+function loadMonthData(userId: string, year: number, month: number): MonthData {
+  const key = getStorageKey(userId, year, month);
   const raw = localStorage.getItem(key);
 
   if (raw) {
@@ -43,22 +43,30 @@ function loadMonthData(year: number, month: number): MonthData {
   return { year, month, habits: createDefaultHabits() };
 }
 
-export function useHabits(initialYear?: number, initialMonth?: number) {
+export function useHabits(userId: string, initialYear?: number, initialMonth?: number) {
   const now = new Date();
   const [year, setYear] = useState(initialYear ?? now.getFullYear());
   const [month, setMonth] = useState(initialMonth ?? now.getMonth());
-  const [habits, setHabits] = useState<Habit[]>(() => loadMonthData(year, month).habits);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [isReady, setIsReady] = useState(false);
 
-  const storageKey = useMemo(() => getStorageKey(year, month), [year, month]);
+  const storageKey = useMemo(
+    () => getStorageKey(userId, year, month),
+    [userId, year, month],
+  );
 
   useEffect(() => {
-    setHabits(loadMonthData(year, month).habits);
-  }, [year, month]);
+    if (!userId) return;
+    setIsReady(false);
+    setHabits(loadMonthData(userId, year, month).habits);
+    setIsReady(true);
+  }, [userId, year, month]);
 
   useEffect(() => {
+    if (!userId || !isReady) return;
     const payload: MonthData = { year, month, habits };
     localStorage.setItem(storageKey, JSON.stringify(payload));
-  }, [habits, month, storageKey, year]);
+  }, [habits, isReady, month, storageKey, userId, year]);
 
   const toggleCheck = useCallback((habitId: string, dateKey: string) => {
     setHabits((prev) =>
@@ -168,6 +176,7 @@ export function useHabits(initialYear?: number, initialMonth?: number) {
     year,
     month,
     habits,
+    isReady,
     toggleCheck,
     setValue,
     addHabit,
