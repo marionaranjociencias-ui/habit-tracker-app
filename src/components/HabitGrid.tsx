@@ -12,7 +12,6 @@ type HabitGridProps = {
   onSetValue: (habitId: string, dateKey: string, value: string) => void;
   onRename: (habitId: string, name: string) => void;
   onUpdateUnit: (habitId: string, unit: string) => void;
-  onRemove: (habitId: string) => void;
   onMoveUp: (habitId: string) => void;
   onMoveDown: (habitId: string) => void;
 };
@@ -27,7 +26,6 @@ export function HabitGrid({
   onSetValue,
   onRename,
   onUpdateUnit,
-  onRemove,
   onMoveUp,
   onMoveDown,
 }: HabitGridProps) {
@@ -87,7 +85,6 @@ export function HabitGrid({
                 onSetValue={onSetValue}
                 onRename={onRename}
                 onUpdateUnit={onUpdateUnit}
-                onRemove={onRemove}
                 onMoveUp={onMoveUp}
                 onMoveDown={onMoveDown}
               />

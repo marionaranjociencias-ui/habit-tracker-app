@@ -24,7 +24,6 @@ function AppContent({ userId }: { userId: string }) {
     addHabit,
     renameHabit,
     updateUnit,
-    removeHabit,
     moveHabitUp,
     moveHabitDown,
     resetMonth,
@@ -89,7 +88,6 @@ function AppContent({ userId }: { userId: string }) {
         onSetValue={setValue}
         onRename={renameHabit}
         onUpdateUnit={updateUnit}
-        onRemove={removeHabit}
         onMoveUp={moveHabitUp}
         onMoveDown={moveHabitDown}
       />

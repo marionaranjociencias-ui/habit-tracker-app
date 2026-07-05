@@ -15,7 +15,6 @@ type HabitRowProps = {
   onSetValue: (habitId: string, dateKey: string, value: string) => void;
   onRename: (habitId: string, name: string) => void;
   onUpdateUnit: (habitId: string, unit: string) => void;
-  onRemove: (habitId: string) => void;
   onMoveUp: (habitId: string) => void;
   onMoveDown: (habitId: string) => void;
 };
@@ -32,7 +31,6 @@ export function HabitRow({
   onSetValue,
   onRename,
   onUpdateUnit,
-  onRemove,
   onMoveUp,
   onMoveDown,
 }: HabitRowProps) {
@@ -43,47 +41,34 @@ export function HabitRow({
     <tr className="habit-row">
       <td className="habit-row__order-cell">
         <span className="habit-row__order-num">{order}</span>
-        <div className="habit-row__order-actions">
-          <button
-            type="button"
-            className="habit-row__order-btn"
-            onClick={() => onMoveUp(habit.id)}
-            disabled={isFirst}
-            aria-label={`Subir ${habit.name}`}
-            title="Subir prioridad"
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            className="habit-row__order-btn"
-            onClick={() => onMoveDown(habit.id)}
-            disabled={isLast}
-            aria-label={`Bajar ${habit.name}`}
-            title="Bajar prioridad"
-          >
-            ↓
-          </button>
-        </div>
+        <button
+          type="button"
+          className="habit-row__order-btn"
+          onClick={() => onMoveUp(habit.id)}
+          disabled={isFirst}
+          aria-label={`Subir ${habit.name}`}
+          title="Subir prioridad"
+        >
+          ↑
+        </button>
+        <button
+          type="button"
+          className="habit-row__order-btn"
+          onClick={() => onMoveDown(habit.id)}
+          disabled={isLast}
+          aria-label={`Bajar ${habit.name}`}
+          title="Bajar prioridad"
+        >
+          ↓
+        </button>
       </td>
       <td className="habit-row__name-cell">
-        <span className={`habit-row__kind-badge habit-row__kind-badge--${habit.kind}`}>
-          {isNumeric ? '#' : '✓'}
-        </span>
         <input
           className="habit-row__name-input"
           value={habit.name}
           onChange={(event) => onRename(habit.id, event.target.value)}
           aria-label={`Nombre del hábito ${habit.name}`}
         />
-        <button
-          type="button"
-          className="habit-row__remove"
-          onClick={() => onRemove(habit.id)}
-          title="Eliminar hábito"
-        >
-          ×
-        </button>
       </td>
       <td className="habit-row__unit-cell">
         {isNumeric ? (
