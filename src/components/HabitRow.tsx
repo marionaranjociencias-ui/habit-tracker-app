@@ -15,6 +15,7 @@ type HabitRowProps = {
   onSetValue: (habitId: string, dateKey: string, value: string) => void;
   onRename: (habitId: string, name: string) => void;
   onUpdateUnit: (habitId: string, unit: string) => void;
+  onRemove: (habitId: string) => void;
   onMoveUp: (habitId: string) => void;
   onMoveDown: (habitId: string) => void;
 };
@@ -31,56 +32,76 @@ export function HabitRow({
   onSetValue,
   onRename,
   onUpdateUnit,
+  onRemove,
   onMoveUp,
   onMoveDown,
 }: HabitRowProps) {
   const stats = getHabitStats(habit, year, month);
   const isNumeric = habit.kind === 'numeric';
 
+  const handleRemove = () => {
+    const confirmed = window.confirm(`¿Eliminar el hábito "${habit.name}"?`);
+    if (confirmed) onRemove(habit.id);
+  };
+
   return (
     <tr className="habit-row">
-      <td className="habit-row__order-cell">
-        <span className="habit-row__order-num">{order}</span>
-        <button
-          type="button"
-          className="habit-row__order-btn"
-          onClick={() => onMoveUp(habit.id)}
-          disabled={isFirst}
-          aria-label={`Subir ${habit.name}`}
-          title="Subir prioridad"
-        >
-          ↑
-        </button>
-        <button
-          type="button"
-          className="habit-row__order-btn"
-          onClick={() => onMoveDown(habit.id)}
-          disabled={isLast}
-          aria-label={`Bajar ${habit.name}`}
-          title="Bajar prioridad"
-        >
-          ↓
-        </button>
-      </td>
-      <td className="habit-row__name-cell">
-        <input
-          className="habit-row__name-input"
-          value={habit.name}
-          onChange={(event) => onRename(habit.id, event.target.value)}
-          aria-label={`Nombre del hábito ${habit.name}`}
-        />
-      </td>
-      <td className="habit-row__unit-cell">
-        {isNumeric ? (
+      <td className="habit-row__habit-col">
+        <div className="habit-row__habit-cell">
+          <div className="habit-row__order-controls">
+            <span className="habit-row__order-num">{order}</span>
+            <button
+              type="button"
+              className="habit-row__order-btn"
+              onClick={() => onMoveUp(habit.id)}
+              disabled={isFirst}
+              aria-label={`Subir ${habit.name}`}
+              title="Subir prioridad"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              className="habit-row__order-btn"
+              onClick={() => onMoveDown(habit.id)}
+              disabled={isLast}
+              aria-label={`Bajar ${habit.name}`}
+              title="Bajar prioridad"
+            >
+              ↓
+            </button>
+          </div>
           <input
-            className="habit-row__unit-input"
-            value={habit.unit}
-            onChange={(event) => onUpdateUnit(habit.id, event.target.value)}
-            aria-label={`Unidad de ${habit.name}`}
+            className="habit-row__name-input"
+            value={habit.name}
+            onChange={(event) => onRename(habit.id, event.target.value)}
+            aria-label={`Nombre del hábito ${habit.name}`}
           />
-        ) : (
-          <span className="habit-row__unit-placeholder">—</span>
-        )}
+          <button
+            type="button"
+            className="habit-row__remove"
+            onClick={handleRemove}
+            title="Eliminar hábito"
+            aria-label={`Eliminar ${habit.name}`}
+          >
+            ×
+          </button>
+        </div>
+      </td>
+      <td className="habit-row__unit-col">
+        <div className="habit-row__unit-stack">
+          <span className="habit-row__unit-label">Unidad</span>
+          {isNumeric ? (
+            <input
+              className="habit-row__unit-input"
+              value={habit.unit}
+              onChange={(event) => onUpdateUnit(habit.id, event.target.value)}
+              aria-label={`Unidad de ${habit.name}`}
+            />
+          ) : (
+            <span className="habit-row__unit-placeholder">—</span>
+          )}
+        </div>
       </td>
       {weeks.map((week, weekIndex) => (
         <td key={week.weekNumber} colSpan={week.days.length} className="habit-row__week">

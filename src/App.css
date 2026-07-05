@@ -300,19 +300,6 @@ body {
   vertical-align: middle;
 }
 
-.habit-grid__habit-header {
-  min-width: 150px;
-  background: #eef6fa;
-  padding: 0.75rem;
-  text-align: left;
-}
-
-.habit-grid__unit-header {
-  min-width: 90px;
-  background: #e8f2f8;
-  padding: 0.75rem;
-}
-
 .habit-grid__week-header {
   padding: 0.5rem;
   font-size: 0.85rem;
@@ -353,22 +340,37 @@ body {
   font-size: 1rem;
 }
 
-.habit-grid__order-header {
-  width: 5.5rem;
-  min-width: 5.5rem;
-  font-size: 0.75rem;
-  vertical-align: bottom;
+.habit-grid__habit-header {
+  min-width: 220px;
+  background: #eef6fa;
+  padding: 0.75rem;
+  text-align: left;
 }
 
-.habit-row__order-cell {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
-  padding: 0.35rem 0.25rem;
-  background: #f5f7f9;
+.habit-grid__unit-header {
+  min-width: 90px;
+  background: #e8f2f8;
+  padding: 0.75rem;
+}
+
+.habit-row__habit-col {
+  padding: 0.35rem;
+  text-align: left;
+  background: #fafcfd;
   vertical-align: middle;
+}
+
+.habit-row__habit-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.habit-row__order-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
 }
 
 .habit-row__order-num {
@@ -409,40 +411,25 @@ body {
   cursor: not-allowed;
 }
 
-.habit-row__name-cell {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem;
-  text-align: left;
-  background: #fafcfd;
-}
-
-.habit-row__kind-badge {
-  flex-shrink: 0;
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.habit-row__kind-badge--numeric {
-  background: #e8f6fc;
-  color: #2a6a85;
-}
-
-.habit-row__kind-badge--boolean {
-  background: #fde8e2;
-  color: #a64b35;
-}
-
-.habit-row__unit-cell {
+.habit-row__unit-col {
   padding: 0.35rem;
   background: #f5fafc;
+  vertical-align: middle;
+}
+
+.habit-row__unit-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.habit-row__unit-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .habit-row__unit-placeholder {
@@ -465,6 +452,11 @@ body {
 .habit-row__name-input {
   text-align: left;
   flex: 1;
+  min-width: 0;
+}
+
+.habit-row__unit-input {
+  max-width: 5rem;
 }
 
 .habit-row__name-input:focus,
@@ -482,6 +474,11 @@ body {
   cursor: pointer;
   line-height: 1;
   padding: 0 0.25rem;
+  flex-shrink: 0;
+}
+
+.habit-row__remove:hover {
+  color: var(--coral);
 }
 
 .habit-row__week {
