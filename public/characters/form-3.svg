@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <rect width="120" height="120" rx="16" fill="#e8f4fd"/>
+  <circle cx="60" cy="42" r="22" fill="#7ec8e3"/>
+  <rect x="38" y="64" width="44" height="36" rx="10" fill="#2196f3"/>
+  <ellipse cx="60" cy="80" rx="30" ry="8" fill="#90caf9" opacity="0.6"/>
+  <text x="60" y="112" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#5a6a74">SSJ Blue (60%)</text>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <rect width="120" height="120" rx="16" fill="#f3f0ff"/>
+  <circle cx="60" cy="42" r="22" fill="#e0e0e0"/>
+  <rect x="38" y="64" width="44" height="36" rx="10" fill="#7c4dff"/>
+  <ellipse cx="60" cy="55" rx="35" ry="35" fill="none" stroke="#b388ff" stroke-width="2" opacity="0.5"/>
+  <ellipse cx="60" cy="55" rx="45" ry="45" fill="none" stroke="#7c4dff" stroke-width="1" opacity="0.3"/>
+  <text x="60" y="112" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#5a6a74">Ultra Instinct (100%)</text>
+</svg>
