@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DEFAULT_HABITS } from '../data/characterForms';
+import { DEFAULT_CATEGORY_ID } from '../data/defaultCategories';
 import { loadMonthData, saveMonthToFirestore } from '../lib/habitStore';
 import type { Habit, HabitKind } from '../types';
 
@@ -11,6 +12,7 @@ function createDefaultHabits(): Habit[] {
     name: habit.name,
     kind: habit.kind,
     unit: habit.unit,
+    categoryId: habit.categoryId,
     checks: {},
     values: {},
   }));
@@ -111,21 +113,25 @@ export function useHabits(userId: string, initialYear?: number, initialMonth?: n
     );
   }, []);
 
-  const addHabit = useCallback((name: string, kind: HabitKind, unit: string) => {
-    const trimmedName = name.trim();
-    if (!trimmedName) return;
-    setHabits((prev) => [
-      ...prev,
-      {
-        id: `habit-${crypto.randomUUID()}`,
-        name: trimmedName,
-        kind,
-        unit: kind === 'numeric' ? unit.trim() || 'reps' : '—',
-        checks: {},
-        values: {},
-      },
-    ]);
-  }, []);
+  const addHabit = useCallback(
+    (name: string, kind: HabitKind, unit: string, categoryId: string = DEFAULT_CATEGORY_ID) => {
+      const trimmedName = name.trim();
+      if (!trimmedName) return;
+      setHabits((prev) => [
+        ...prev,
+        {
+          id: `habit-${crypto.randomUUID()}`,
+          name: trimmedName,
+          kind,
+          unit: kind === 'numeric' ? unit.trim() || 'reps' : '—',
+          categoryId,
+          checks: {},
+          values: {},
+        },
+      ]);
+    },
+    [],
+  );
 
   const renameHabit = useCallback((habitId: string, name: string) => {
     const trimmed = name.trim();
@@ -143,6 +149,20 @@ export function useHabits(userId: string, initialYear?: number, initialMonth?: n
         if (!trimmed) return habit;
         return { ...habit, unit: trimmed };
       }),
+    );
+  }, []);
+
+  const updateHabitCategory = useCallback((habitId: string, categoryId: string) => {
+    setHabits((prev) =>
+      prev.map((habit) => (habit.id === habitId ? { ...habit, categoryId } : habit)),
+    );
+  }, []);
+
+  const reassignCategory = useCallback((fromCategoryId: string, toCategoryId: string) => {
+    setHabits((prev) =>
+      prev.map((habit) =>
+        habit.categoryId === fromCategoryId ? { ...habit, categoryId: toCategoryId } : habit,
+      ),
     );
   }, []);
 
@@ -207,6 +227,8 @@ export function useHabits(userId: string, initialYear?: number, initialMonth?: n
     addHabit,
     renameHabit,
     updateUnit,
+    updateHabitCategory,
+    reassignCategory,
     removeHabit,
     moveHabitUp,
     moveHabitDown,

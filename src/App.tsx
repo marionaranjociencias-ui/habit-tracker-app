@@ -1,10 +1,13 @@
 import { useCallback } from 'react';
 import { AuthHeader } from './components/AuthHeader';
+import { CategoryManager } from './components/CategoryManager';
 import { Dashboard } from './components/Dashboard';
 import { HabitGrid } from './components/HabitGrid';
 import { HabitManager } from './components/HabitManager';
 import { LoginScreen } from './components/LoginScreen';
+import { DEFAULT_CATEGORY_ID } from './data/defaultCategories';
 import { useAuth } from './hooks/useAuth';
+import { useCategories } from './hooks/useCategories';
 import { useHabits } from './hooks/useHabits';
 import { useMonthCalendar } from './hooks/useMonthCalendar';
 import { getDailyProgress, getGlobalPercentage } from './utils/calculations';
@@ -17,13 +20,15 @@ function AppContent({ userId }: { userId: string }) {
     year,
     month,
     habits,
-    isReady,
-    error,
+    isReady: habitsReady,
+    error: habitsError,
     toggleCheck,
     setValue,
     addHabit,
     renameHabit,
     updateUnit,
+    updateHabitCategory,
+    reassignCategory,
     removeHabit,
     moveHabitUp,
     moveHabitDown,
@@ -32,13 +37,42 @@ function AppContent({ userId }: { userId: string }) {
     goToNextMonth,
   } = useHabits(userId);
 
+  const {
+    categories,
+    isReady: categoriesReady,
+    error: categoriesError,
+    addCategory,
+    renameCategory,
+    updateCategoryColor,
+    removeCategory,
+    getNextPaletteColor,
+  } = useCategories(userId);
+
   const weeks = useMonthCalendar(year, month);
   const globalPercentage = getGlobalPercentage(habits, year, month);
   const chartData = getDailyProgress(habits, year, month);
 
   const handleExportExcel = useCallback(() => {
-    exportHabitsToExcel(habits, weeks, year, month);
-  }, [habits, weeks, year, month]);
+    exportHabitsToExcel(habits, categories, weeks, year, month);
+  }, [habits, categories, weeks, year, month]);
+
+  const habitCountByCategory = useCallback(
+    (categoryId: string) => habits.filter((habit) => habit.categoryId === categoryId).length,
+    [habits],
+  );
+
+  const handleRemoveCategory = useCallback(
+    (categoryId: string) => {
+      const fallback = categories.find((category) => category.id !== categoryId);
+      if (!fallback) return;
+      reassignCategory(categoryId, fallback.id);
+      removeCategory(categoryId);
+    },
+    [categories, reassignCategory, removeCategory],
+  );
+
+  const isReady = habitsReady && categoriesReady;
+  const error = habitsError ?? categoriesError;
 
   if (!isReady) {
     return (
@@ -77,10 +111,27 @@ function AppContent({ userId }: { userId: string }) {
 
       <Dashboard globalPercentage={globalPercentage} chartData={chartData} />
 
-      <HabitManager onAdd={addHabit} onReset={resetMonth} onExportExcel={handleExportExcel} />
+      <CategoryManager
+        categories={categories}
+        habitCountByCategory={habitCountByCategory}
+        onAdd={addCategory}
+        onRename={renameCategory}
+        onUpdateColor={updateCategoryColor}
+        onRemove={handleRemoveCategory}
+        getNextPaletteColor={getNextPaletteColor}
+      />
+
+      <HabitManager
+        categories={categories}
+        defaultCategoryId={categories[0]?.id ?? DEFAULT_CATEGORY_ID}
+        onAdd={addHabit}
+        onReset={resetMonth}
+        onExportExcel={handleExportExcel}
+      />
 
       <HabitGrid
         habits={habits}
+        categories={categories}
         weeks={weeks}
         year={year}
         month={month}
@@ -89,6 +140,7 @@ function AppContent({ userId }: { userId: string }) {
         onSetValue={setValue}
         onRename={renameHabit}
         onUpdateUnit={updateUnit}
+        onUpdateCategory={updateHabitCategory}
         onRemove={removeHabit}
         onMoveUp={moveHabitUp}
         onMoveDown={moveHabitDown}
@@ -96,9 +148,9 @@ function AppContent({ userId }: { userId: string }) {
 
       <footer className="app__footer">
         <p>
-          Hábitos con <strong>#</strong> aceptan números (lagartijas, pull-ups). Hábitos con{' '}
-          <strong>✓</strong> son sí/no. Tus datos se sincronizan con tu cuenta de Google en todos
-          tus dispositivos.
+          Organiza tus hábitos por categorías con color. Los numéricos aceptan cantidades; los de
+          sí/no se marcan con ✓. Tus datos se sincronizan con tu cuenta de Google en todos tus
+          dispositivos.
         </p>
       </footer>
     </div>

@@ -1,20 +1,35 @@
-import { useState, type FormEvent } from 'react';
-import type { HabitKind } from '../types';
+import { useEffect, useState, type FormEvent } from 'react';
+import type { Category, HabitKind } from '../types';
 
 type HabitManagerProps = {
-  onAdd: (name: string, kind: HabitKind, unit: string) => void;
+  categories: Category[];
+  defaultCategoryId: string;
+  onAdd: (name: string, kind: HabitKind, unit: string, categoryId: string) => void;
   onReset: () => void;
   onExportExcel: () => void;
 };
 
-export function HabitManager({ onAdd, onReset, onExportExcel }: HabitManagerProps) {
+export function HabitManager({
+  categories,
+  defaultCategoryId,
+  onAdd,
+  onReset,
+  onExportExcel,
+}: HabitManagerProps) {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('reps');
   const [kind, setKind] = useState<HabitKind>('numeric');
+  const [categoryId, setCategoryId] = useState(defaultCategoryId);
+
+  useEffect(() => {
+    if (!categories.some((category) => category.id === categoryId)) {
+      setCategoryId(categories[0]?.id ?? defaultCategoryId);
+    }
+  }, [categories, categoryId, defaultCategoryId]);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    onAdd(name, kind, unit);
+    onAdd(name, kind, unit, categoryId);
     setName('');
     setUnit('reps');
     setKind('numeric');
@@ -30,6 +45,18 @@ export function HabitManager({ onAdd, onReset, onExportExcel }: HabitManagerProp
           onChange={(event) => setName(event.target.value)}
           className="habit-manager__input"
         />
+        <select
+          className="habit-manager__select"
+          value={categoryId}
+          onChange={(event) => setCategoryId(event.target.value)}
+          aria-label="Categoría del hábito"
+        >
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
         <select
           className="habit-manager__select"
           value={kind}

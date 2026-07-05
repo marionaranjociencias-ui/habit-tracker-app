@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { DEFAULT_HABITS, STORAGE_PREFIX } from '../data/characterForms';
+import { DEFAULT_CATEGORY_ID } from '../data/defaultCategories';
 import type { Habit, MonthData } from '../types';
 import { getFirebaseFirestore } from './firebase';
 
@@ -11,16 +12,18 @@ function createDefaultHabits(): Habit[] {
     name: habit.name,
     kind: habit.kind,
     unit: habit.unit,
+    categoryId: habit.categoryId,
     checks: {},
     values: {},
   }));
 }
 
-function normalizeHabits(habits: Habit[]): Habit[] {
+function normalizeHabits(habits: Habit[], fallbackCategoryId = DEFAULT_CATEGORY_ID): Habit[] {
   return habits.map((habit) => ({
     ...habit,
     kind: habit.kind ?? 'boolean',
     unit: habit.unit ?? '—',
+    categoryId: habit.categoryId ?? fallbackCategoryId,
     checks: habit.checks ?? {},
     values: habit.values ?? {},
   }));

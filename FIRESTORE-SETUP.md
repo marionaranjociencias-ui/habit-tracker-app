@@ -23,7 +23,7 @@ Guía para habilitar la sincronización de hábitos en la nube.
 3. Pega en el editor de reglas
 4. Clic en **Publish**
 
-Las reglas garantizan que cada usuario solo lee y escribe sus propios datos en `users/{userId}/months/{monthId}`.
+Las reglas garantizan que cada usuario solo lee y escribe sus propios datos en `users/{userId}/months/{monthId}` y `users/{userId}/settings`.
 
 ## Paso 3 — Verificar en la app
 
@@ -42,11 +42,14 @@ Si ya tenías datos guardados en el navegador (Fase 2), la app los sube automát
 ```
 users/
   {userId}/
+    settings/
+      categories: [...]
+      updatedAt: "..."
     months/
       2026-07/          ← año-mes
         year: 2026
         month: 6         ← 0-indexed (julio)
-        habits: [...]
+        habits: [...]    ← cada hábito incluye categoryId
         updatedAt: "..."
 ```
 

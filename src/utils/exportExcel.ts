@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { Habit, WeekInfo } from '../types';
+import type { Category, Habit, WeekInfo } from '../types';
 import { getActiveForm, getGlobalPercentage, getHabitStats, getLevel } from './calculations';
 import { getMonthLabel } from './dateHelpers';
 
@@ -11,8 +11,13 @@ function cellValue(habit: Habit, dateKey: string): string | number {
   return value && value > 0 ? value : '';
 }
 
+function getCategoryName(categories: Category[], categoryId: string): string {
+  return categories.find((category) => category.id === categoryId)?.name ?? '—';
+}
+
 function buildTrackingSheet(
   habits: Habit[],
+  categories: Category[],
   weeks: WeekInfo[],
   year: number,
   month: number,
@@ -20,11 +25,11 @@ function buildTrackingSheet(
   const monthLabel = getMonthLabel(year, month);
   const globalPercentage = getGlobalPercentage(habits, year, month);
 
-  const weekHeaderRow: (string | number)[] = ['Orden', 'Hábito', 'Tipo', 'Unidad'];
-  const dayHeaderRow: string[] = ['', '', '', ''];
+  const weekHeaderRow: (string | number)[] = ['Orden', 'Hábito', 'Categoría', 'Tipo', 'Unidad'];
+  const dayHeaderRow: string[] = ['', '', '', '', ''];
   const merges: XLSX.Range[] = [];
 
-  let colIndex = 4;
+  let colIndex = 5;
   weeks.forEach((week) => {
     const startCol = colIndex;
     week.days.forEach((day, dayIndex) => {
@@ -41,11 +46,26 @@ function buildTrackingSheet(
   weekHeaderRow.push('Total/Mejor', 'Días activos', 'Progreso %');
   dayHeaderRow.push('', '', '');
 
-  const habitRows = habits.map((habit, index) => {
+  const dataRows: (string | number)[][] = [];
+  let order = 0;
+
+  habits.forEach((habit, index) => {
+    const prevCategoryId = index > 0 ? habits[index - 1].categoryId : null;
+    if (habit.categoryId !== prevCategoryId) {
+      const categoryName = getCategoryName(categories, habit.categoryId).toUpperCase();
+      const headerRow: (string | number)[] = [categoryName];
+      for (let i = 1; i < weekHeaderRow.length; i += 1) {
+        headerRow.push('');
+      }
+      dataRows.push(headerRow);
+    }
+
+    order += 1;
     const stats = getHabitStats(habit, year, month);
     const row: (string | number)[] = [
-      index + 1,
+      order,
       habit.name,
+      getCategoryName(categories, habit.categoryId),
       habit.kind === 'numeric' ? 'Numérico' : 'Sí/No',
       habit.unit,
     ];
@@ -59,7 +79,7 @@ function buildTrackingSheet(
       `${stats.activeDays}/${stats.totalDays}`,
       Number(stats.percentage.toFixed(2)),
     );
-    return row;
+    dataRows.push(row);
   });
 
   const sheetData: (string | number)[][] = [
@@ -67,21 +87,33 @@ function buildTrackingSheet(
     [],
     weekHeaderRow,
     dayHeaderRow,
-    ...habitRows,
+    ...dataRows,
     [],
     ['Progreso global completado', Number(globalPercentage.toFixed(2))],
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
   worksheet['!merges'] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(colIndex + 2, 6) } },
+    { s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(colIndex + 2, 7) } },
     ...merges,
   ];
-  worksheet['!cols'] = [{ wch: 6 }, { wch: 22 }, { wch: 10 }, { wch: 12 }, ...Array.from({ length: colIndex }, () => ({ wch: 10 }))];
+  worksheet['!cols'] = [
+    { wch: 6 },
+    { wch: 22 },
+    { wch: 14 },
+    { wch: 10 },
+    { wch: 12 },
+    ...Array.from({ length: colIndex }, () => ({ wch: 10 })),
+  ];
   return worksheet;
 }
 
-function buildSummarySheet(habits: Habit[], year: number, month: number): XLSX.WorkSheet {
+function buildSummarySheet(
+  habits: Habit[],
+  categories: Category[],
+  year: number,
+  month: number,
+): XLSX.WorkSheet {
   const monthLabel = getMonthLabel(year, month);
   const globalPercentage = getGlobalPercentage(habits, year, month);
 
@@ -91,12 +123,13 @@ function buildSummarySheet(habits: Habit[], year: number, month: number): XLSX.W
     ['Nivel alcanzado', getLevel(globalPercentage)],
     ['Forma activa', getActiveForm(globalPercentage).name],
     [],
-    ['Orden', 'Hábito', 'Tipo', 'Unidad', 'Total', 'Mejor/Prom', 'Días activos', 'Progreso (%)'],
+    ['Orden', 'Hábito', 'Categoría', 'Tipo', 'Unidad', 'Total', 'Mejor/Prom', 'Días activos', 'Progreso (%)'],
     ...habits.map((habit, index) => {
       const stats = getHabitStats(habit, year, month);
       return [
         index + 1,
         habit.name,
+        getCategoryName(categories, habit.categoryId),
         habit.kind === 'numeric' ? 'Numérico' : 'Sí/No',
         habit.unit,
         habit.kind === 'numeric' ? stats.totalAmount : '—',
@@ -112,12 +145,21 @@ function buildSummarySheet(habits: Habit[], year: number, month: number): XLSX.W
 
 export function exportHabitsToExcel(
   habits: Habit[],
+  categories: Category[],
   weeks: WeekInfo[],
   year: number,
   month: number,
 ): void {
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, buildTrackingSheet(habits, weeks, year, month), 'Hábitos');
-  XLSX.utils.book_append_sheet(workbook, buildSummarySheet(habits, year, month), 'Resumen');
+  XLSX.utils.book_append_sheet(
+    workbook,
+    buildTrackingSheet(habits, categories, weeks, year, month),
+    'Hábitos',
+  );
+  XLSX.utils.book_append_sheet(
+    workbook,
+    buildSummarySheet(habits, categories, year, month),
+    'Resumen',
+  );
   XLSX.writeFile(workbook, `habit-tracker-app-${year}-${String(month + 1).padStart(2, '0')}.xlsx`);
 }

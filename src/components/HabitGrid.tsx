@@ -1,9 +1,12 @@
-import type { Habit, WeekInfo } from '../types';
+import { Fragment, useMemo } from 'react';
+import type { Category, Habit, WeekInfo } from '../types';
 import { formatPercentage } from '../utils/dateHelpers';
+import { CategoryHeaderRow } from './CategoryHeaderRow';
 import { HabitRow } from './HabitRow';
 
 type HabitGridProps = {
   habits: Habit[];
+  categories: Category[];
   weeks: WeekInfo[];
   year: number;
   month: number;
@@ -12,6 +15,7 @@ type HabitGridProps = {
   onSetValue: (habitId: string, dateKey: string, value: string) => void;
   onRename: (habitId: string, name: string) => void;
   onUpdateUnit: (habitId: string, unit: string) => void;
+  onUpdateCategory: (habitId: string, categoryId: string) => void;
   onRemove: (habitId: string) => void;
   onMoveUp: (habitId: string) => void;
   onMoveDown: (habitId: string) => void;
@@ -19,6 +23,7 @@ type HabitGridProps = {
 
 export function HabitGrid({
   habits,
+  categories,
   weeks,
   year,
   month,
@@ -27,10 +32,18 @@ export function HabitGrid({
   onSetValue,
   onRename,
   onUpdateUnit,
+  onUpdateCategory,
   onRemove,
   onMoveUp,
   onMoveDown,
 }: HabitGridProps) {
+  const categoriesById = useMemo(
+    () => new Map(categories.map((category) => [category.id, category])),
+    [categories],
+  );
+
+  const totalCols = 2 + weeks.reduce((sum, week) => sum + week.days.length, 0) + 1;
+
   return (
     <section className="habit-grid">
       <div className="habit-grid__scroll">
@@ -71,25 +84,38 @@ export function HabitGrid({
             </tr>
           </thead>
           <tbody>
-            {habits.map((habit, index) => (
-              <HabitRow
-                key={habit.id}
-                habit={habit}
-                order={index + 1}
-                isFirst={index === 0}
-                isLast={index === habits.length - 1}
-                weeks={weeks}
-                year={year}
-                month={month}
-                onToggle={onToggle}
-                onSetValue={onSetValue}
-                onRename={onRename}
-                onUpdateUnit={onUpdateUnit}
-                onRemove={onRemove}
-                onMoveUp={onMoveUp}
-                onMoveDown={onMoveDown}
-              />
-            ))}
+            {habits.map((habit, index) => {
+              const prevCategoryId = index > 0 ? habits[index - 1].categoryId : null;
+              const showHeader = habit.categoryId !== prevCategoryId;
+              const category = categoriesById.get(habit.categoryId);
+
+              return (
+                <Fragment key={habit.id}>
+                  {showHeader && category && (
+                    <CategoryHeaderRow category={category} colSpan={totalCols} />
+                  )}
+                  <HabitRow
+                    habit={habit}
+                    categories={categories}
+                    categoryColor={category?.color}
+                    order={index + 1}
+                    isFirst={index === 0}
+                    isLast={index === habits.length - 1}
+                    weeks={weeks}
+                    year={year}
+                    month={month}
+                    onToggle={onToggle}
+                    onSetValue={onSetValue}
+                    onRename={onRename}
+                    onUpdateUnit={onUpdateUnit}
+                    onUpdateCategory={onUpdateCategory}
+                    onRemove={onRemove}
+                    onMoveUp={onMoveUp}
+                    onMoveDown={onMoveDown}
+                  />
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

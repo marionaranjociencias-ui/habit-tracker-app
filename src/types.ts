@@ -1,10 +1,17 @@
 export type HabitKind = 'boolean' | 'numeric';
 
+export type Category = {
+  id: string;
+  name: string;
+  color: string;
+};
+
 export type Habit = {
   id: string;
   name: string;
   kind: HabitKind;
   unit: string;
+  categoryId: string;
   checks: Record<string, boolean>;
   values: Record<string, number>;
 };
@@ -54,4 +61,10 @@ export type DefaultHabitSeed = {
   name: string;
   kind: HabitKind;
   unit: string;
+  categoryId: string;
+};
+
+export type UserSettings = {
+  categories: Category[];
+  updatedAt: string;
 };

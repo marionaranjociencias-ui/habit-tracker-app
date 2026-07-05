@@ -1,10 +1,13 @@
-import type { Habit, WeekInfo } from '../types';
+import type { CSSProperties } from 'react';
+import type { Category, Habit, WeekInfo } from '../types';
 import { getHabitStats } from '../utils/calculations';
 import { formatNumber, formatPercentage } from '../utils/dateHelpers';
 import { ProgressBar } from './ProgressBar';
 
 type HabitRowProps = {
   habit: Habit;
+  categories: Category[];
+  categoryColor?: string;
   order: number;
   isFirst: boolean;
   isLast: boolean;
@@ -15,6 +18,7 @@ type HabitRowProps = {
   onSetValue: (habitId: string, dateKey: string, value: string) => void;
   onRename: (habitId: string, name: string) => void;
   onUpdateUnit: (habitId: string, unit: string) => void;
+  onUpdateCategory: (habitId: string, categoryId: string) => void;
   onRemove: (habitId: string) => void;
   onMoveUp: (habitId: string) => void;
   onMoveDown: (habitId: string) => void;
@@ -22,6 +26,8 @@ type HabitRowProps = {
 
 export function HabitRow({
   habit,
+  categories,
+  categoryColor,
   order,
   isFirst,
   isLast,
@@ -32,12 +38,16 @@ export function HabitRow({
   onSetValue,
   onRename,
   onUpdateUnit,
+  onUpdateCategory,
   onRemove,
   onMoveUp,
   onMoveDown,
 }: HabitRowProps) {
   const stats = getHabitStats(habit, year, month);
   const isNumeric = habit.kind === 'numeric';
+  const rowStyle = categoryColor
+    ? ({ '--category-color': categoryColor } as CSSProperties)
+    : undefined;
 
   const handleRemove = () => {
     const confirmed = window.confirm(`¿Eliminar el hábito "${habit.name}"?`);
@@ -45,8 +55,8 @@ export function HabitRow({
   };
 
   return (
-    <tr className="habit-row">
-      <td className="habit-row__habit-col">
+    <tr className={`habit-row ${categoryColor ? 'habit-row--categorized' : ''}`} style={rowStyle}>
+      <td className="habit-row__habit-col habit-row__habit-col--categorized">
         <div className="habit-row__habit-cell">
           <div className="habit-row__order-controls">
             <span className="habit-row__order-num">{order}</span>
@@ -71,6 +81,19 @@ export function HabitRow({
               ↓
             </button>
           </div>
+          <select
+            className="habit-row__category-select"
+            value={habit.categoryId}
+            onChange={(event) => onUpdateCategory(habit.id, event.target.value)}
+            aria-label={`Categoría de ${habit.name}`}
+            title="Categoría"
+          >
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
           <input
             className="habit-row__name-input"
             value={habit.name}
@@ -88,7 +111,7 @@ export function HabitRow({
           </button>
         </div>
       </td>
-      <td className="habit-row__unit-col">
+      <td className="habit-row__unit-col habit-row__unit-col--categorized">
         <div className="habit-row__unit-stack">
           <span className="habit-row__unit-label">Unidad</span>
           {isNumeric ? (

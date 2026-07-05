@@ -10,11 +10,11 @@ export const CHARACTER_FORMS: CharacterForm[] = [
 ];
 
 export const DEFAULT_HABITS: DefaultHabitSeed[] = [
-  { name: 'Lagartijas', kind: 'numeric', unit: 'reps' },
-  { name: 'Pull-ups', kind: 'numeric', unit: 'reps' },
-  { name: 'Leer', kind: 'numeric', unit: 'páginas' },
-  { name: 'Meditar', kind: 'boolean', unit: '—' },
-  { name: 'Agua 2L', kind: 'boolean', unit: '—' },
+  { name: 'Lagartijas', kind: 'numeric', unit: 'reps', categoryId: 'exercise' },
+  { name: 'Pull-ups', kind: 'numeric', unit: 'reps', categoryId: 'exercise' },
+  { name: 'Leer', kind: 'numeric', unit: 'páginas', categoryId: 'study' },
+  { name: 'Meditar', kind: 'boolean', unit: '—', categoryId: 'personal' },
+  { name: 'Agua 2L', kind: 'boolean', unit: '—', categoryId: 'personal' },
 ];
 
 export const STORAGE_PREFIX = 'habit-tracker-app';
