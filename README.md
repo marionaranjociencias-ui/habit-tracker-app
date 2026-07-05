@@ -2,6 +2,8 @@
 
 App unificada: hábitos **Sí/No** y **numéricos** con columna de unidades. Preparada para publicarse en Vercel.
 
+> **Rama GitHub:** `unificado` (mismo repo que la versión simple, rama `main`)
+
 ## Características
 
 - Lagartijas / Pull-ups → números + unidad `reps`
@@ -20,7 +22,12 @@ Abre **http://localhost:5175**
 
 ## Publicar en internet (Vercel)
 
-Guía paso a paso: [DEPLOY-FASE1.md](./DEPLOY-FASE1.md)
+1. [vercel.com/new](https://vercel.com/new) → Import `marionaranjo-oss/habit-tracker-app`
+2. **Production Branch:** `unificado`
+3. Build: `npm run build` · Output: `dist`
+4. Deploy
+
+Guía detallada de las dos versiones: `../DOS-VERSIONES.md`
 
 ## Roadmap
 
