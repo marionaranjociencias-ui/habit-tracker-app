@@ -81,25 +81,28 @@ export function HabitRow({
               ↓
             </button>
           </div>
-          <select
-            className="habit-row__category-select"
-            value={habit.categoryId}
-            onChange={(event) => onUpdateCategory(habit.id, event.target.value)}
-            aria-label={`Categoría de ${habit.name}`}
-            title="Categoría"
-          >
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-          <input
-            className="habit-row__name-input"
-            value={habit.name}
-            onChange={(event) => onRename(habit.id, event.target.value)}
-            aria-label={`Nombre del hábito ${habit.name}`}
-          />
+          <div className="habit-row__habit-main">
+            <input
+              className="habit-row__name-input"
+              value={habit.name}
+              onChange={(event) => onRename(habit.id, event.target.value)}
+              aria-label={`Nombre del hábito ${habit.name}`}
+              placeholder="Nombre del hábito"
+            />
+            <select
+              className="habit-row__category-select"
+              value={habit.categoryId}
+              onChange={(event) => onUpdateCategory(habit.id, event.target.value)}
+              aria-label={`Categoría de ${habit.name}`}
+              title="Categoría"
+            >
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             type="button"
             className="habit-row__remove"
