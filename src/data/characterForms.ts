@@ -1,4 +1,4 @@
-import type { CharacterForm, DefaultHabitSeed } from '../types';
+import type { CharacterForm, DefaultHabitSeed, Habit } from '../types';
 
 export const CHARACTER_FORMS: CharacterForm[] = [
   { id: 'form-0', name: 'Base', threshold: 0, image: '/characters/form-0.svg' },
@@ -10,11 +10,25 @@ export const CHARACTER_FORMS: CharacterForm[] = [
 ];
 
 export const DEFAULT_HABITS: DefaultHabitSeed[] = [
-  { name: 'Lagartijas', kind: 'numeric', unit: 'reps', categoryId: 'exercise' },
-  { name: 'Pull-ups', kind: 'numeric', unit: 'reps', categoryId: 'exercise' },
-  { name: 'Leer', kind: 'numeric', unit: 'páginas', categoryId: 'study' },
-  { name: 'Meditar', kind: 'boolean', unit: '—', categoryId: 'personal' },
-  { name: 'Agua 2L', kind: 'boolean', unit: '—', categoryId: 'personal' },
+  { name: 'Lagartijas', trackingMode: 'units', unitLabel: 'reps', categoryId: 'exercise' },
+  { name: 'Pull-ups', trackingMode: 'units', unitLabel: 'reps', categoryId: 'exercise' },
+  { name: 'Leer', trackingMode: 'units', unitLabel: 'páginas', categoryId: 'study' },
+  { name: 'Agua 2L', trackingMode: 'units', unitLabel: 'litros', targetValue: 2, categoryId: 'personal' },
+  { name: 'Meditar', trackingMode: 'simple', categoryId: 'personal' },
 ];
 
-export const STORAGE_PREFIX = 'habit-tracker-app';
+export function createDefaultHabits(): Habit[] {
+  const now = new Date().toISOString();
+  return DEFAULT_HABITS.map((seed, index) => ({
+    id: `habit-${index + 1}`,
+    name: seed.name,
+    categoryId: seed.categoryId,
+    order: index,
+    trackingMode: seed.trackingMode,
+    unitLabel: seed.unitLabel,
+    targetValue: seed.targetValue,
+    targetPeriod: 'daily' as const,
+    createdAt: now,
+    updatedAt: now,
+  }));
+}

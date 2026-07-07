@@ -1,193 +1,183 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { DEFAULT_HABITS, STORAGE_PREFIX } from '../data/characterForms';
-import { DEFAULT_CATEGORY_ID } from '../data/defaultCategories';
-import type { Habit, MonthData } from '../types';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  setDoc,
+  writeBatch,
+} from 'firebase/firestore';
+import { createDefaultHabits } from '../data/characterForms';
+import type { Habit, HabitLog, LogsByHabitId } from '../types';
+import { formatDateKey, getDaysInMonth } from '../utils/dateHelpers';
 import { getFirebaseFirestore } from './firebase';
 
-const MIGRATION_FLAG_PREFIX = `${STORAGE_PREFIX}-migrated`;
-
-function createDefaultHabits(): Habit[] {
-  return DEFAULT_HABITS.map((habit, index) => ({
-    id: `habit-${index + 1}`,
-    name: habit.name,
-    kind: habit.kind,
-    unit: habit.unit,
-    categoryId: habit.categoryId,
-    checks: {},
-    values: {},
-  }));
+export function getHabitsCollectionPath(userId: string): string {
+  return `users/${userId}/habits`;
 }
 
-function normalizeHabits(habits: Habit[], fallbackCategoryId = DEFAULT_CATEGORY_ID): Habit[] {
-  return habits.map((habit) => ({
-    ...habit,
-    kind: habit.kind ?? 'boolean',
-    unit: habit.unit ?? '—',
-    categoryId: habit.categoryId ?? fallbackCategoryId,
-    checks: habit.checks ?? {},
-    values: habit.values ?? {},
-  }));
+export function getHabitDocPath(userId: string, habitId: string): string {
+  return `${getHabitsCollectionPath(userId)}/${habitId}`;
 }
 
-function normalizeMonthData(data: MonthData): MonthData {
+export function getLogDocPath(userId: string, habitId: string, date: string): string {
+  return `${getHabitDocPath(userId, habitId)}/logs/${date}`;
+}
+
+function normalizeHabit(data: Habit): Habit {
+  const now = new Date().toISOString();
   return {
-    year: data.year,
-    month: data.month,
-    habits: normalizeHabits(data.habits),
+    id: data.id,
+    name: data.name,
+    categoryId: data.categoryId,
+    order: data.order ?? 0,
+    trackingMode: data.trackingMode,
+    unitLabel: data.unitLabel,
+    targetValue: data.targetValue,
+    targetPeriod: data.targetPeriod ?? 'daily',
+    createdAt: data.createdAt ?? now,
+    updatedAt: data.updatedAt ?? now,
   };
 }
 
-export function getMonthDocId(year: number, month: number): string {
-  const m = String(month + 1).padStart(2, '0');
-  return `${year}-${m}`;
-}
-
-export function getMonthDocPath(userId: string, year: number, month: number): string {
-  return `users/${userId}/months/${getMonthDocId(year, month)}`;
-}
-
-function getLocalStorageKey(userId: string, year: number, month: number): string {
-  return `${STORAGE_PREFIX}-${userId}-${getMonthDocId(year, month)}`;
-}
-
-function getMigrationFlagKey(userId: string): string {
-  return `${MIGRATION_FLAG_PREFIX}-${userId}`;
-}
-
-export function isMigrationDone(userId: string): boolean {
-  return localStorage.getItem(getMigrationFlagKey(userId)) === 'true';
-}
-
-export function markMigrationDone(userId: string): void {
-  localStorage.setItem(getMigrationFlagKey(userId), 'true');
-}
-
-export function loadMonthFromLocalStorage(
-  userId: string,
-  year: number,
-  month: number,
-): MonthData | null {
-  const key = getLocalStorageKey(userId, year, month);
-  const raw = localStorage.getItem(key);
-
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as MonthData;
-    return normalizeMonthData(parsed);
-  } catch {
-    return null;
-  }
-}
-
-function listLocalStorageMonthKeys(userId: string): string[] {
-  const prefix = `${STORAGE_PREFIX}-${userId}-`;
-  const keys: string[] = [];
-
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith(prefix)) {
-      keys.push(key);
-    }
-  }
-
-  return keys;
-}
-
-function parseMonthKey(key: string, userId: string): { year: number; month: number } | null {
-  const prefix = `${STORAGE_PREFIX}-${userId}-`;
-  if (!key.startsWith(prefix)) return null;
-
-  const yearMonth = key.slice(prefix.length);
-  const match = /^(\d{4})-(\d{2})$/.exec(yearMonth);
-  if (!match) return null;
-
-  const year = Number(match[1]);
-  const month = Number(match[2]) - 1;
-
-  if (Number.isNaN(year) || Number.isNaN(month) || month < 0 || month > 11) {
-    return null;
-  }
-
-  return { year, month };
-}
-
-export async function loadMonthFromFirestore(
-  userId: string,
-  year: number,
-  month: number,
-): Promise<MonthData | null> {
+export async function loadHabits(userId: string): Promise<Habit[]> {
   const db = getFirebaseFirestore();
-  const ref = doc(db, getMonthDocPath(userId, year, month));
-  const snapshot = await getDoc(ref);
+  const snapshot = await getDocs(collection(db, getHabitsCollectionPath(userId)));
 
-  if (!snapshot.exists()) return null;
+  if (snapshot.empty) {
+    const defaults = createDefaultHabits();
+    await Promise.all(defaults.map((habit) => saveHabit(userId, habit)));
+    return defaults;
+  }
 
-  const data = snapshot.data() as MonthData;
-  return normalizeMonthData({
-    year: data.year ?? year,
-    month: data.month ?? month,
-    habits: data.habits ?? [],
+  return snapshot.docs
+    .map((docSnap) => normalizeHabit({ id: docSnap.id, ...docSnap.data() } as Habit))
+    .sort((a, b) => a.order - b.order);
+}
+
+export async function saveHabit(userId: string, habit: Habit): Promise<void> {
+  const db = getFirebaseFirestore();
+  const ref = doc(db, getHabitDocPath(userId, habit.id));
+  const normalized = normalizeHabit({
+    ...habit,
+    updatedAt: new Date().toISOString(),
   });
+
+  await setDoc(ref, normalized, { merge: true });
 }
 
-export async function saveMonthToFirestore(userId: string, data: MonthData): Promise<void> {
+export async function saveHabits(userId: string, habits: Habit[]): Promise<void> {
+  await Promise.all(habits.map((habit) => saveHabit(userId, habit)));
+}
+
+export async function deleteHabit(userId: string, habitId: string): Promise<void> {
   const db = getFirebaseFirestore();
-  const ref = doc(db, getMonthDocPath(userId, data.year, data.month));
+  const logsSnapshot = await getDocs(
+    collection(db, `${getHabitDocPath(userId, habitId)}/logs`),
+  );
+
+  const batch = writeBatch(db);
+  logsSnapshot.docs.forEach((logDoc) => batch.delete(logDoc.ref));
+  batch.delete(doc(db, getHabitDocPath(userId, habitId)));
+  await batch.commit();
+}
+
+function getMonthDatePrefix(year: number, month: number): string {
+  return `${year}-${String(month + 1).padStart(2, '0')}`;
+}
+
+export async function loadLogsForMonth(
+  userId: string,
+  habitIds: string[],
+  year: number,
+  month: number,
+): Promise<LogsByHabitId> {
+  const db = getFirebaseFirestore();
+  const prefix = getMonthDatePrefix(year, month);
+  const result: LogsByHabitId = {};
+
+  await Promise.all(
+    habitIds.map(async (habitId) => {
+      const snapshot = await getDocs(
+        collection(db, `${getHabitDocPath(userId, habitId)}/logs`),
+      );
+
+      const logs: Record<string, HabitLog> = {};
+      snapshot.docs.forEach((logDoc) => {
+        const log = logDoc.data() as HabitLog;
+        if (log.date?.startsWith(prefix)) {
+          logs[log.date] = log;
+        }
+      });
+
+      result[habitId] = logs;
+    }),
+  );
+
+  return result;
+}
+
+export async function upsertLog(
+  userId: string,
+  habitId: string,
+  log: HabitLog,
+): Promise<void> {
+  const db = getFirebaseFirestore();
+  const ref = doc(db, getLogDocPath(userId, habitId, log.date));
 
   await setDoc(
     ref,
     {
-      year: data.year,
-      month: data.month,
-      habits: data.habits,
+      ...log,
       updatedAt: new Date().toISOString(),
     },
     { merge: true },
   );
 }
 
-export async function migrateLocalStorageToFirestore(userId: string): Promise<void> {
-  if (isMigrationDone(userId)) return;
-
-  const keys = listLocalStorageMonthKeys(userId);
-
-  for (const key of keys) {
-    const parsed = parseMonthKey(key, userId);
-    if (!parsed) continue;
-
-    const { year, month } = parsed;
-    const existing = await loadMonthFromFirestore(userId, year, month);
-    if (existing) continue;
-
-    const localData = loadMonthFromLocalStorage(userId, year, month);
-    if (!localData) continue;
-
-    await saveMonthToFirestore(userId, localData);
-  }
-
-  markMigrationDone(userId);
-}
-
-export function createDefaultMonthData(year: number, month: number): MonthData {
-  return { year, month, habits: createDefaultHabits() };
-}
-
-export async function loadMonthData(
+export async function deleteLog(
   userId: string,
+  habitId: string,
+  date: string,
+): Promise<void> {
+  const db = getFirebaseFirestore();
+  await deleteDoc(doc(db, getLogDocPath(userId, habitId, date)));
+}
+
+export async function deleteLogsForMonth(
+  userId: string,
+  habitIds: string[],
   year: number,
   month: number,
-): Promise<MonthData> {
-  await migrateLocalStorageToFirestore(userId);
+): Promise<void> {
+  const db = getFirebaseFirestore();
+  const prefix = getMonthDatePrefix(year, month);
+  const batch = writeBatch(db);
+  let hasWrites = false;
 
-  const fromFirestore = await loadMonthFromFirestore(userId, year, month);
-  if (fromFirestore) return fromFirestore;
+  await Promise.all(
+    habitIds.map(async (habitId) => {
+      const snapshot = await getDocs(
+        collection(db, `${getHabitDocPath(userId, habitId)}/logs`),
+      );
 
-  const fromLocal = loadMonthFromLocalStorage(userId, year, month);
-  if (fromLocal) {
-    await saveMonthToFirestore(userId, fromLocal);
-    return fromLocal;
+      snapshot.docs.forEach((logDoc) => {
+        const log = logDoc.data() as HabitLog;
+        if (log.date?.startsWith(prefix)) {
+          batch.delete(logDoc.ref);
+          hasWrites = true;
+        }
+      });
+    }),
+  );
+
+  if (hasWrites) {
+    await batch.commit();
   }
+}
 
-  return createDefaultMonthData(year, month);
+export function getMonthDateKeys(year: number, month: number): string[] {
+  const days = getDaysInMonth(year, month);
+  return Array.from({ length: days }, (_, index) =>
+    formatDateKey(year, month, index + 1),
+  );
 }

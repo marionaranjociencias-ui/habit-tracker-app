@@ -1,10 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import type { Category, HabitKind } from '../types';
+import type { Category, TrackingMode } from '../types';
 
 type HabitManagerProps = {
   categories: Category[];
   defaultCategoryId: string;
-  onAdd: (name: string, kind: HabitKind, unit: string, categoryId: string) => void;
+  onAdd: (
+    name: string,
+    trackingMode: TrackingMode,
+    categoryId: string,
+    unitLabel?: string,
+    targetValue?: number,
+  ) => void;
   onReset: () => void;
   onExportExcel: () => void;
 };
@@ -17,8 +23,9 @@ export function HabitManager({
   onExportExcel,
 }: HabitManagerProps) {
   const [name, setName] = useState('');
-  const [unit, setUnit] = useState('reps');
-  const [kind, setKind] = useState<HabitKind>('numeric');
+  const [unitLabel, setUnitLabel] = useState('reps');
+  const [targetValue, setTargetValue] = useState('');
+  const [trackingMode, setTrackingMode] = useState<TrackingMode>('simple');
   const [categoryId, setCategoryId] = useState(defaultCategoryId);
 
   useEffect(() => {
@@ -29,10 +36,18 @@ export function HabitManager({
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    onAdd(name, kind, unit, categoryId);
+    const parsedTarget = targetValue.trim() ? Number(targetValue) : undefined;
+    onAdd(
+      name,
+      trackingMode,
+      categoryId,
+      trackingMode === 'units' ? unitLabel : undefined,
+      parsedTarget && parsedTarget > 0 ? parsedTarget : undefined,
+    );
     setName('');
-    setUnit('reps');
-    setKind('numeric');
+    setUnitLabel('reps');
+    setTargetValue('');
+    setTrackingMode('simple');
   };
 
   return (
@@ -59,21 +74,33 @@ export function HabitManager({
         </select>
         <select
           className="habit-manager__select"
-          value={kind}
-          onChange={(event) => setKind(event.target.value as HabitKind)}
-          aria-label="Tipo de hábito"
+          value={trackingMode}
+          onChange={(event) => setTrackingMode(event.target.value as TrackingMode)}
+          aria-label="Modo de seguimiento"
         >
-          <option value="numeric">Con número</option>
-          <option value="boolean">Sí / No</option>
+          <option value="simple">Modo simple</option>
+          <option value="units">Con unidades</option>
         </select>
-        {kind === 'numeric' && (
-          <input
-            type="text"
-            placeholder="Unidad (reps, páginas...)"
-            value={unit}
-            onChange={(event) => setUnit(event.target.value)}
-            className="habit-manager__input habit-manager__input--unit"
-          />
+        {trackingMode === 'units' && (
+          <>
+            <input
+              type="text"
+              placeholder="Unidad (litros, min...)"
+              value={unitLabel}
+              onChange={(event) => setUnitLabel(event.target.value)}
+              className="habit-manager__input habit-manager__input--unit"
+            />
+            <input
+              type="number"
+              min={0}
+              step={0.1}
+              placeholder="Meta diaria (opcional)"
+              value={targetValue}
+              onChange={(event) => setTargetValue(event.target.value)}
+              className="habit-manager__input habit-manager__input--target"
+              aria-label="Meta diaria opcional"
+            />
+          </>
         )}
         <button type="submit" className="habit-manager__add">
           + Agregar

@@ -48,8 +48,3 @@ export function formatPercentage(value: number): string {
 export function formatNumber(value: number): string {
   return value.toLocaleString('es-MX');
 }
-
-export function isHabitActiveOnDay(habit: { kind: string; checks: Record<string, boolean>; values: Record<string, number> }, dateKey: string): boolean {
-  if (habit.kind === 'boolean') return Boolean(habit.checks[dateKey]);
-  return (habit.values[dateKey] ?? 0) > 0;
-}

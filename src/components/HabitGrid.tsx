@@ -1,5 +1,5 @@
 import { Fragment, useMemo } from 'react';
-import type { Category, Habit, WeekInfo } from '../types';
+import type { Category, Habit, LogsByHabitId, TrackingMode, WeekInfo } from '../types';
 import { formatPercentage } from '../utils/dateHelpers';
 import { CategoryHeaderRow } from './CategoryHeaderRow';
 import { HabitRow } from './HabitRow';
@@ -7,14 +7,18 @@ import { HabitRow } from './HabitRow';
 type HabitGridProps = {
   habits: Habit[];
   categories: Category[];
+  logsByHabitId: LogsByHabitId;
   weeks: WeekInfo[];
   year: number;
   month: number;
   globalPercentage: number;
-  onToggle: (habitId: string, dateKey: string) => void;
-  onSetValue: (habitId: string, dateKey: string, value: string) => void;
+  onToggleSimple: (habitId: string, dateKey: string) => void;
+  onSetUnitsValue: (habitId: string, dateKey: string, value: string) => void;
+  onIncrementUnits: (habitId: string, dateKey: string) => void;
   onRename: (habitId: string, name: string) => void;
-  onUpdateUnit: (habitId: string, unit: string) => void;
+  onUpdateUnitLabel: (habitId: string, unit: string) => void;
+  onUpdateTargetValue: (habitId: string, value: string) => void;
+  onUpdateTrackingMode: (habitId: string, mode: TrackingMode) => void;
   onUpdateCategory: (habitId: string, categoryId: string) => void;
   onRemove: (habitId: string) => void;
   onMoveUp: (habitId: string) => void;
@@ -24,14 +28,18 @@ type HabitGridProps = {
 export function HabitGrid({
   habits,
   categories,
+  logsByHabitId,
   weeks,
   year,
   month,
   globalPercentage,
-  onToggle,
-  onSetValue,
+  onToggleSimple,
+  onSetUnitsValue,
+  onIncrementUnits,
   onRename,
-  onUpdateUnit,
+  onUpdateUnitLabel,
+  onUpdateTargetValue,
+  onUpdateTrackingMode,
   onUpdateCategory,
   onRemove,
   onMoveUp,
@@ -97,6 +105,7 @@ export function HabitGrid({
                   <HabitRow
                     habit={habit}
                     categories={categories}
+                    logsByHabitId={logsByHabitId}
                     categoryColor={category?.color}
                     order={index + 1}
                     isFirst={index === 0}
@@ -104,10 +113,13 @@ export function HabitGrid({
                     weeks={weeks}
                     year={year}
                     month={month}
-                    onToggle={onToggle}
-                    onSetValue={onSetValue}
+                    onToggleSimple={onToggleSimple}
+                    onSetUnitsValue={onSetUnitsValue}
+                    onIncrementUnits={onIncrementUnits}
                     onRename={onRename}
-                    onUpdateUnit={onUpdateUnit}
+                    onUpdateUnitLabel={onUpdateUnitLabel}
+                    onUpdateTargetValue={onUpdateTargetValue}
+                    onUpdateTrackingMode={onUpdateTrackingMode}
                     onUpdateCategory={onUpdateCategory}
                     onRemove={onRemove}
                     onMoveUp={onMoveUp}

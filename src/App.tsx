@@ -20,13 +20,17 @@ function AppContent({ userId }: { userId: string }) {
     year,
     month,
     habits,
+    logsByHabitId,
     isReady: habitsReady,
     error: habitsError,
-    toggleCheck,
-    setValue,
+    toggleSimple,
+    setUnitsValue,
+    incrementUnits,
     addHabit,
     renameHabit,
-    updateUnit,
+    updateUnitLabel,
+    updateTargetValue,
+    updateTrackingMode,
     updateHabitCategory,
     reassignCategory,
     removeHabit,
@@ -49,12 +53,12 @@ function AppContent({ userId }: { userId: string }) {
   } = useCategories(userId);
 
   const weeks = useMonthCalendar(year, month);
-  const globalPercentage = getGlobalPercentage(habits, year, month);
-  const chartData = getDailyProgress(habits, year, month);
+  const globalPercentage = getGlobalPercentage(habits, logsByHabitId, year, month);
+  const chartData = getDailyProgress(habits, logsByHabitId, year, month);
 
   const handleExportExcel = useCallback(() => {
-    exportHabitsToExcel(habits, categories, weeks, year, month);
-  }, [habits, categories, weeks, year, month]);
+    exportHabitsToExcel(habits, categories, logsByHabitId, weeks, year, month);
+  }, [habits, categories, logsByHabitId, weeks, year, month]);
 
   const habitCountByCategory = useCallback(
     (categoryId: string) => habits.filter((habit) => habit.categoryId === categoryId).length,
@@ -91,9 +95,9 @@ function AppContent({ userId }: { userId: string }) {
       )}
       <header className="app__header">
         <div>
-          <p className="app__tagline">Sí/No y cantidades — tu app de hábitos</p>
+          <p className="app__tagline">Modo simple o con unidades — tu app de hábitos</p>
           <h1 className="app__title">Habit Tracker App</h1>
-          <p className="app__phase">Fase 3 — Datos sincronizados en la nube</p>
+          <p className="app__phase">Hábitos persistentes con registros diarios en la nube</p>
         </div>
         <div className="app__header-actions">
           <AuthHeader />
@@ -132,14 +136,18 @@ function AppContent({ userId }: { userId: string }) {
       <HabitGrid
         habits={habits}
         categories={categories}
+        logsByHabitId={logsByHabitId}
         weeks={weeks}
         year={year}
         month={month}
         globalPercentage={globalPercentage}
-        onToggle={toggleCheck}
-        onSetValue={setValue}
+        onToggleSimple={toggleSimple}
+        onSetUnitsValue={setUnitsValue}
+        onIncrementUnits={incrementUnits}
         onRename={renameHabit}
-        onUpdateUnit={updateUnit}
+        onUpdateUnitLabel={updateUnitLabel}
+        onUpdateTargetValue={updateTargetValue}
+        onUpdateTrackingMode={updateTrackingMode}
         onUpdateCategory={updateHabitCategory}
         onRemove={removeHabit}
         onMoveUp={moveHabitUp}
@@ -148,9 +156,9 @@ function AppContent({ userId }: { userId: string }) {
 
       <footer className="app__footer">
         <p>
-          Organiza tus hábitos por categorías con color. Los numéricos aceptan cantidades; los de
-          sí/no se marcan con ✓. Tus datos se sincronizan con tu cuenta de Google en todos tus
-          dispositivos.
+          Marca hábitos en <strong>modo simple</strong> (sí/no) o registra cantidades en{' '}
+          <strong>modo con unidades</strong>. Las metas diarias se muestran en el grid. Tus datos
+          se sincronizan con tu cuenta de Google.
         </p>
       </footer>
     </div>

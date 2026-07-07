@@ -1,36 +1,67 @@
 import { CHARACTER_FORMS } from '../data/characterForms';
-import type { CharacterForm, DailyProgress, Habit, HabitStats } from '../types';
-import { formatDateKey, getDaysInMonth, isHabitActiveOnDay } from './dateHelpers';
+import type { CharacterForm, DailyProgress, Habit, HabitLog, HabitStats, LogsByHabitId } from '../types';
+import { isLogActive, isTargetMet, isUnitsMode } from './habitTracking';
+import { formatDateKey, getDaysInMonth } from './dateHelpers';
 
-function getMonthPrefix(year: number, month: number): string {
-  return `${year}-${String(month + 1).padStart(2, '0')}`;
+function getMonthDateKeys(year: number, month: number): string[] {
+  const days = getDaysInMonth(year, month);
+  return Array.from({ length: days }, (_, index) => formatDateKey(year, month, index + 1));
 }
 
-function getActiveDayCount(habit: Habit, year: number, month: number): number {
-  const prefix = getMonthPrefix(year, month);
+function getLogsForMonth(
+  habitId: string,
+  logsByHabitId: LogsByHabitId,
+  year: number,
+  month: number,
+): HabitLog[] {
+  const habitLogs = logsByHabitId[habitId] ?? {};
+  const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+  return Object.values(habitLogs).filter((log) => log.date.startsWith(prefix));
+}
 
-  if (habit.kind === 'boolean') {
-    return Object.entries(habit.checks).filter(
-      ([dateKey, value]) => value && dateKey.startsWith(prefix),
-    ).length;
+function computeStreak(habit: Habit, logsByHabitId: LogsByHabitId): number {
+  const today = new Date();
+  let streak = 0;
+  let cursor = new Date(today);
+
+  for (let i = 0; i < 365; i += 1) {
+    const dateKey = formatDateKey(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
+    const log = logsByHabitId[habit.id]?.[dateKey];
+
+    if (isLogActive(log)) {
+      streak += 1;
+    } else {
+      break;
+    }
+
+    cursor.setDate(cursor.getDate() - 1);
   }
 
-  return Object.entries(habit.values).filter(
-    ([dateKey, value]) => value > 0 && dateKey.startsWith(prefix),
-  ).length;
+  return streak;
 }
 
-function getNumericAmounts(habit: Habit, year: number, month: number): number[] {
-  const prefix = getMonthPrefix(year, month);
-  return Object.entries(habit.values)
-    .filter(([dateKey, value]) => dateKey.startsWith(prefix) && value > 0)
-    .map(([, value]) => value);
-}
-
-export function getHabitStats(habit: Habit, year: number, month: number): HabitStats {
+export function getHabitStats(
+  habit: Habit,
+  logsByHabitId: LogsByHabitId,
+  year: number,
+  month: number,
+): HabitStats {
   const totalDays = getDaysInMonth(year, month);
-  const activeDays = getActiveDayCount(habit, year, month);
-  const amounts = habit.kind === 'numeric' ? getNumericAmounts(habit, year, month) : [];
+  const dateKeys = getMonthDateKeys(year, month);
+  const monthLogs = getLogsForMonth(habit.id, logsByHabitId, year, month);
+
+  const activeDays = dateKeys.filter((dateKey) =>
+    isLogActive(logsByHabitId[habit.id]?.[dateKey]),
+  ).length;
+
+  const targetDays = dateKeys.filter((dateKey) =>
+    isTargetMet(habit, logsByHabitId[habit.id]?.[dateKey]),
+  ).length;
+
+  const amounts = isUnitsMode(habit)
+    ? monthLogs.map((log) => log.value ?? 0).filter((value) => value > 0)
+    : [];
+
   const totalAmount = amounts.reduce((sum, value) => sum + value, 0);
 
   return {
@@ -38,16 +69,24 @@ export function getHabitStats(habit: Habit, year: number, month: number): HabitS
     activeDays,
     totalDays,
     percentage: totalDays === 0 ? 0 : (activeDays / totalDays) * 100,
+    targetDays,
+    targetPercentage: totalDays === 0 ? 0 : (targetDays / totalDays) * 100,
+    streak: computeStreak(habit, logsByHabitId),
     totalAmount,
     average: amounts.length === 0 ? 0 : totalAmount / amounts.length,
     best: amounts.length === 0 ? 0 : Math.max(...amounts),
   };
 }
 
-export function getGlobalPercentage(habits: Habit[], year: number, month: number): number {
+export function getGlobalPercentage(
+  habits: Habit[],
+  logsByHabitId: LogsByHabitId,
+  year: number,
+  month: number,
+): number {
   if (habits.length === 0) return 0;
-  const stats = habits.map((habit) => getHabitStats(habit, year, month));
-  return stats.reduce((acc, s) => acc + s.percentage, 0) / habits.length;
+  const stats = habits.map((habit) => getHabitStats(habit, logsByHabitId, year, month));
+  return stats.reduce((acc, stat) => acc + stat.percentage, 0) / habits.length;
 }
 
 export function getUnlockedForms(globalPercentage: number): CharacterForm[] {
@@ -72,15 +111,28 @@ export function getMotivationalMessage(globalPercentage: number): string {
   return '¡Empieza fuerte! Obtuviste';
 }
 
-export function getDailyProgress(habits: Habit[], year: number, month: number): DailyProgress[] {
-  const days = getDaysInMonth(year, month);
-  const monthPrefix = getMonthPrefix(year, month);
+export function getDailyProgress(
+  habits: Habit[],
+  logsByHabitId: LogsByHabitId,
+  year: number,
+  month: number,
+): DailyProgress[] {
+  const dateKeys = getMonthDateKeys(year, month);
 
-  return Array.from({ length: days }, (_, index) => {
-    const day = index + 1;
-    const dateKey = formatDateKey(year, month, day);
-    const activeHabits = habits.filter((habit) => isHabitActiveOnDay(habit, dateKey)).length;
+  return dateKeys.map((dateKey) => {
+    const day = Number(dateKey.split('-')[2]);
+    const activeHabits = habits.filter((habit) =>
+      isLogActive(logsByHabitId[habit.id]?.[dateKey]),
+    ).length;
     const percentage = habits.length === 0 ? 0 : (activeHabits / habits.length) * 100;
     return { dateKey, label: String(day), percentage };
-  }).filter((entry) => entry.dateKey.startsWith(monthPrefix));
+  });
+}
+
+export function isHabitActiveOnDay(
+  habit: Habit,
+  logsByHabitId: LogsByHabitId,
+  dateKey: string,
+): boolean {
+  return isLogActive(logsByHabitId[habit.id]?.[dateKey]);
 }
